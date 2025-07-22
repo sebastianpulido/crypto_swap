@@ -1,0 +1,19 @@
+{
+  "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "abi": [
+    "event OwnershipTransferred(address indexed,address indexed)",
+    "event SwapInitiated(bytes32 indexed,address indexed,address indexed,address,uint256,bytes32,uint256)",
+    "event SwapRefunded(bytes32 indexed)",
+    "event SwapWithdrawn(bytes32 indexed,bytes32)",
+    "function getSwap(bytes32) view returns (address,address,address,uint256,bytes32,uint256,bool,bool)",
+    "function initiateSwap(bytes32,address,address,uint256,bytes32,uint256) payable",
+    "function isRefundable(bytes32) view returns (bool)",
+    "function isWithdrawable(bytes32,bytes32) view returns (bool)",
+    "function owner() view returns (address)",
+    "function refund(bytes32)",
+    "function renounceOwnership()",
+    "function swaps(bytes32) view returns (address,address,address,uint256,bytes32,uint256,bool,bool,bool)",
+    "function transferOwnership(address)",
+    "function withdraw(bytes32,bytes32)"
+  ]
+}

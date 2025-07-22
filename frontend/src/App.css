@@ -1,0 +1,319 @@
+.App {
+  text-align: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.App-header {
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.App-header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: bold;
+}
+
+.App-header p {
+  margin: 10px 0;
+  font-size: 1.2rem;
+  opacity: 0.9;
+}
+
+.nav-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.nav-tabs button {
+  padding: 10px 20px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-tabs button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.nav-tabs button.active {
+  background: rgba(255, 255, 255, 0.4);
+  font-weight: bold;
+}
+
+.App-main {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.wallet-connection {
+  margin-bottom: 30px;
+}
+
+.wallet-connected {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: rgba(0, 255, 0, 0.2);
+  border-radius: 25px;
+  display: inline-flex;
+}
+
+.connect-wallet-btn {
+  padding: 12px 30px;
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.connect-wallet-btn:hover {
+  background: #ff5252;
+  transform: translateY(-2px);
+}
+
+/* Swap Interface Styles */
+.swap-interface {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 30px;
+  margin: 20px 0;
+}
+
+.swap-direction {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.swap-direction label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.swap-form {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 15px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #45a049;
+  transform: translateY(-2px);
+}
+
+.submit-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+}
+
+.swap-result {
+  margin-top: 30px;
+  padding: 20px;
+  background: rgba(0, 255, 0, 0.1);
+  border-radius: 15px;
+  border: 2px solid rgba(0, 255, 0, 0.3);
+}
+
+.result-details {
+  text-align: left;
+  margin: 15px 0;
+}
+
+.result-details p {
+  margin: 10px 0;
+  word-break: break-all;
+}
+
+.result-details code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-family: monospace;
+}
+
+.warning {
+  background: rgba(255, 165, 0, 0.2);
+  border: 2px solid rgba(255, 165, 0, 0.5);
+  border-radius: 10px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+/* Swap Status Styles */
+.swap-status {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 30px;
+  margin: 20px 0;
+}
+
+.refresh-btn {
+  padding: 10px 20px;
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.swaps-list {
+  display: grid;
+  gap: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.swap-card {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  padding: 20px;
+  text-align: left;
+}
+
+.swap-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.status-badge {
+  padding: 5px 15px;
+  border-radius: 20px;
+  color: white;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.swap-details p {
+  margin: 8px 0;
+}
+
+.swap-details code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.swap-actions {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.secret-input {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.secret-input input {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+}
+
+.withdraw-btn {
+  padding: 10px 20px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.refund-btn {
+  padding: 10px 20px;
+  background: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.withdraw-btn:disabled,
+.refund-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .App-header h1 {
+    font-size: 2rem;
+  }
+  
+  .swap-direction {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .secret-input {
+    flex-direction: column;
+  }
+  
+  .swap-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
