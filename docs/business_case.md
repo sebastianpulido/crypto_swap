@@ -74,6 +74,84 @@ Bitcoin amounts are specified in satoshis (the smallest unit of Bitcoin, 1 BTC =
 2. **Standard Practice**: Bitcoin transactions are calculated in satoshis at the protocol level
 3. **Clarity**: Prevents confusion with decimal places
 
+## Common Patterns in Decentralized Trading
+
+### 1. **Order Book Model (Most Common)**
+- Users create "limit orders" specifying exactly what they want to trade
+- Example: "I'll sell 1 ETH for 25,000 USDC"
+- Other users can accept this offer or create counter-offers
+- Used by: Uniswap V4, dYdX, 0x Protocol
+
+### 2. **Peer-to-Peer Negotiation**
+- Users post offers and negotiate rates directly
+- Common in OTC (Over-The-Counter) trading
+- Used by: LocalBitcoins, Bisq, HodlHodl
+
+### 3. **Automated Market Makers (AMM)**
+- Algorithms set rates based on liquidity pools
+- Users still specify exact amounts they want to trade
+- Used by: Uniswap V2/V3, SushiSwap, PancakeSwap
+
+## Why Applications Don't Set Exchange Rates
+
+### 1. **Decentralization Principle**
+```javascript
+// Instead of this (centralized):
+const rate = getExchangeRateFromCentralServer();
+
+// We do this (decentralized):
+const userOffer = {
+  give: "1 ETH",
+  want: "0.025 BTC"  // User decides the rate
+};
+```
+
+### 2. **Legal and Regulatory Reasons**
+- Setting exchange rates could classify the app as a financial service
+- Regulatory compliance becomes much more complex
+- Avoids being seen as a "money transmitter"
+
+### 3. **Market Efficiency**
+- Users know their local markets better than algorithms
+- Allows for premium/discount based on urgency
+- Enables arbitrage opportunities
+
+## Real-World Examples
+
+### Traditional Atomic Swaps
+- **Bisq**: Users post offers like "Sell 1 BTC for $45,000 USD"
+- **AtomicDEX**: Users create orders specifying exact amounts
+- **Komodo**: Peer-to-peer order matching
+
+### DeFi Protocols
+- **Uniswap**: You specify "I want to swap exactly 1 ETH for at least 2,500 USDC"
+- **1inch**: Aggregates multiple sources but you still set your parameters
+
+## Benefits of User-Set Rates
+
+1. **Flexibility**: Users can offer premium rates for faster execution
+2. **Market Discovery**: True price discovery through supply/demand
+3. **No Slippage Control**: You get exactly what you agreed to
+4. **Regulatory Safety**: App doesn't act as a financial intermediary
+
+## How It Works in Practice
+
+```javascript
+// User creates an offer
+const swapOffer = {
+  type: "ETH_TO_BTC",
+  ethAmount: "1.0",        // What they're giving
+  btcAmount: "2500000",    // What they want (in satoshis)
+  timelock: 24 * 60 * 60,  // 24 hours
+  creator: userAddress
+};
+
+// Other users can:
+// 1. Accept this exact offer
+// 2. Create a counter-offer
+// 3. Ignore it and look for better rates
+```
+
 ## Target Users
 
 1. **Cryptocurrency Traders**: Looking for lower fees and more privacy
