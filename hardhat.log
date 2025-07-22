@@ -77,3 +77,68 @@ Any funds sent to them on Mainnet or any other live network WILL BE LOST.
   From: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
   To:   0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
 
+[32meth_blockNumber[0m
+[32meth_estimateGas[0m
+[32meth_blockNumber[0m
+[32meth_blockNumber (2)[0m
+[32meth_blockNumber (3)[0m
+[32meth_blockNumber (4)[0m
+[32meth_blockNumber (5)[0m
+[32meth_blockNumber (6)[0m
+[32meth_estimateGas[0m
+[32meth_getCode[0m
+[32meth_blockNumber[0m
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:   0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:   0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:   0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:   0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:   0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_getTransactionCount[0m
+[32meth_sendRawTransaction[0m
+  Transaction: 0xc51a4f20a769676950b122f97e244a67c6b02b47d3f996fbd27d582efa7fb3e5
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+  Value:       1. ETH
+  Gas used:    25870 of 25870
+  Block #1:    0x0449483e93754341a9e71dbfe6e9170c61910a42cacde71ac916321232be93dd
+
+[32meth_getTransactionReceipt[0m
+[32meth_blockNumber[0m
+[32meth_getBlockByNumber[0m
+[32meth_getBalance[0m
+[32meth_getBalance (2)[0m
+[32meth_getTransactionReceipt[0m
+[32meth_getBlockByHash[0m
+[32meth_gasPrice[0m
+[32mnet_version[0m
+[32meth_blockNumber[0m
+[32mnet_version[0m
+[32mnet_version (2)[0m
+[32mnet_version (3)[0m
+[32mnet_version (4)[0m
+[32mnet_version (5)[0m
+[32meth_getBlockByNumber[0m
+[32meth_blockNumber[0m
+[32meth_blockNumber (2)[0m
+[32meth_getBalance[0m
+[32meth_getBalance (2)[0m

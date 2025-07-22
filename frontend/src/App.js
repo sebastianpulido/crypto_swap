@@ -51,10 +51,15 @@ function App() {
 
   const fetchActiveSwaps = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/swaps`);
+      // Use fallback URL if environment variable is not available
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+      console.log('Fetching swaps from:', `${apiUrl}/api/swaps`);
+      
+      const response = await fetch(`${apiUrl}/api/swaps`);
       const data = await response.json();
       if (data.success) {
         setActiveSwaps(data.data);
+        console.log('Fetched swaps:', data.data);
       }
     } catch (error) {
       console.error('Error fetching swaps:', error);
