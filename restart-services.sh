@@ -30,8 +30,8 @@ echo ""
 echo "📋 Step 2: Starting Hardhat node..."
 echo "🚀 Starting Hardhat node on port 8545..."
 
-# Start Hardhat node in background
-npx hardhat node > hardhat.log 2>&1 &
+# Start Hardhat node with explicit host binding for MetaMask compatibility
+npx hardhat node --hostname 0.0.0.0 > hardhat.log 2>&1 &
 HARDHAT_PID=$!
 
 # Wait for Hardhat node to be ready

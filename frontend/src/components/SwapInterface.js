@@ -5,12 +5,19 @@ import AtomicSwapContract from '../contracts/AtomicSwap.json';
 const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
   const [swapDirection, setSwapDirection] = useState('eth-to-btc');
   const [ethAmount, setEthAmount] = useState('');
-  const [btcAmount, setBtcAmount] = useState('');
-  const [btcAddress, setBtcAddress] = useState('');
+  const [cryptoAmount, setCryptoAmount] = useState('');
+  const [cryptoAddress, setCryptoAddress] = useState('');
   const [ethAddress, setEthAddress] = useState('');
   const [timelock, setTimelock] = useState(24); // hours
   const [loading, setLoading] = useState(false);
   const [swapResult, setSwapResult] = useState(null);
+
+  const swapOptions = {
+    'eth-to-btc': { label: 'Ethereum → Bitcoin', crypto: 'BTC', unit: 'satoshis' },
+    'btc-to-eth': { label: 'Bitcoin → Ethereum', crypto: 'BTC', unit: 'satoshis' },
+    'eth-to-doge': { label: 'Ethereum → Dogecoin', crypto: 'DOGE', unit: 'dogeoshis' },
+    'doge-to-eth': { label: 'Dogecoin → Ethereum', crypto: 'DOGE', unit: 'dogeoshis' }
+  };
 
   const generateSwapId = () => {
     return ethers.hexlify(ethers.randomBytes(32));
@@ -18,7 +25,6 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
 
   const generateSecret = async () => {
     try {
-      // Use direct URL to backend
       const response = await fetch('http://localhost:3001/api/generate-secret', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
@@ -31,11 +37,10 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
     }
   };
 
-  const initiateEthToBtcSwap = async () => {
+  const initiateEthToCryptoSwap = async (cryptoType) => {
     try {
       setLoading(true);
       
-      // Generate secret and swap ID
       const { secret, hashedSecret } = await generateSecret();
       const swapId = generateSwapId();
       const timelockTimestamp = Math.floor(Date.now() / 1000) + (timelock * 3600);
@@ -50,7 +55,7 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
       // Initiate swap on Ethereum
       const tx = await contract.initiateSwap(
         swapId,
-        account, // participant (will be updated with actual participant)
+        account,
         ethers.ZeroAddress, // ETH
         ethers.parseEther(ethAmount),
         hashedSecret,
@@ -60,15 +65,16 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
 
       await tx.wait();
 
-      // Register swap with backend - use direct URL
-      const response = await fetch('http://localhost:3001/api/swap/eth-to-btc/initiate', {
+      // Register swap with backend
+      const endpoint = cryptoType === 'btc' ? 'eth-to-btc' : 'eth-to-doge';
+      const response = await fetch(`http://localhost:3001/api/swap/${endpoint}/initiate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           swapId,
           ethAmount: ethers.parseEther(ethAmount).toString(),
-          btcAmount,
-          btcAddress,
+          [cryptoType + 'Amount']: cryptoAmount,
+          [cryptoType + 'Address']: cryptoAddress,
           hashedSecret,
           timelock: timelockTimestamp
         })
@@ -81,7 +87,7 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
         secret,
         hashedSecret,
         txHash: tx.hash,
-        message: 'Ethereum to Bitcoin swap initiated successfully!'
+        message: `Ethereum to ${cryptoType.toUpperCase()} swap initiated successfully!`
       });
 
       onSwapCreated();
@@ -93,28 +99,27 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
     }
   };
 
-  const initiateBtcToEthSwap = async () => {
+  const initiateCryptoToEthSwap = async (cryptoType) => {
     try {
       setLoading(true);
       
-      // Generate secret and swap ID
       const { secret, hashedSecret } = await generateSecret();
       const swapId = generateSwapId();
       const timelockTimestamp = Math.floor(Date.now() / 1000) + (timelock * 3600);
 
-      // For Bitcoin to Ethereum, we need to create the Bitcoin script first
-      const response = await fetch('http://localhost:3001/api/swap/btc-to-eth/initiate', {
+      const endpoint = cryptoType === 'btc' ? 'btc-to-eth' : 'doge-to-eth';
+      const response = await fetch(`http://localhost:3001/api/swap/${endpoint}/initiate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           swapId,
-          btcAmount,
+          [cryptoType + 'Amount']: cryptoAmount,
           ethAmount: ethers.parseEther(ethAmount).toString(),
           ethAddress: ethAddress || account,
           hashedSecret,
           timelock: timelockTimestamp,
-          btcSenderPubKey: '02' + '0'.repeat(64), // Placeholder - would get from user
-          btcRecipientPubKey: '03' + '0'.repeat(64) // Placeholder - would get from user
+          [cryptoType + 'SenderPubKey']: '02' + '0'.repeat(64), // Placeholder
+          [cryptoType + 'RecipientPubKey']: '03' + '0'.repeat(64) // Placeholder
         })
       });
 
@@ -124,8 +129,8 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
         swapId,
         secret,
         hashedSecret,
-        btcSwapAddress: result.data.btcSwapAddress,
-        message: 'Bitcoin to Ethereum swap initiated! Please fund the Bitcoin address.'
+        [cryptoType + 'SwapAddress']: result.data[cryptoType + 'SwapAddress'],
+        message: `${cryptoType.toUpperCase()} to Ethereum swap initiated! Please fund the ${cryptoType.toUpperCase()} address.`
       });
 
       onSwapCreated();
@@ -140,45 +145,45 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!ethAmount || !btcAmount) {
-      alert('Please enter both ETH and BTC amounts');
+    if (!ethAmount || !cryptoAmount) {
+      alert('Please enter both ETH and crypto amounts');
       return;
     }
 
-    if (swapDirection === 'eth-to-btc') {
-      if (!btcAddress) {
-        alert('Please enter Bitcoin address');
+    const [fromChain, toChain] = swapDirection.split('-to-');
+    
+    if (fromChain === 'eth') {
+      if (!cryptoAddress) {
+        alert(`Please enter ${toChain.toUpperCase()} address`);
         return;
       }
-      await initiateEthToBtcSwap();
+      await initiateEthToCryptoSwap(toChain);
     } else {
-      await initiateBtcToEthSwap();
+      await initiateCryptoToEthSwap(fromChain);
     }
   };
 
+  const currentOption = swapOptions[swapDirection];
+
   return (
     <div className="swap-interface">
-      <h2>Create New Atomic Swap</h2>
+      <h2>Direct Atomic Swap</h2>
+      <p className="direct-description">
+        Create direct peer-to-peer atomic swaps without intermediaries
+      </p>
       
       <div className="swap-direction">
-        <label>
-          <input
-            type="radio"
-            value="eth-to-btc"
-            checked={swapDirection === 'eth-to-btc'}
-            onChange={(e) => setSwapDirection(e.target.value)}
-          />
-          Ethereum → Bitcoin
-        </label>
-        <label>
-          <input
-            type="radio"
-            value="btc-to-eth"
-            checked={swapDirection === 'btc-to-eth'}
-            onChange={(e) => setSwapDirection(e.target.value)}
-          />
-          Bitcoin → Ethereum
-        </label>
+        {Object.entries(swapOptions).map(([key, option]) => (
+          <label key={key}>
+            <input
+              type="radio"
+              value={key}
+              checked={swapDirection === key}
+              onChange={(e) => setSwapDirection(e.target.value)}
+            />
+            {option.label}
+          </label>
+        ))}
       </div>
 
       <form onSubmit={handleSubmit} className="swap-form">
@@ -195,30 +200,30 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
         </div>
 
         <div className="form-group">
-          <label>BTC Amount (satoshis):</label>
+          <label>{currentOption.crypto} Amount ({currentOption.unit}):</label>
           <input
             type="number"
-            value={btcAmount}
-            onChange={(e) => setBtcAmount(e.target.value)}
-            placeholder="1000000"
+            value={cryptoAmount}
+            onChange={(e) => setCryptoAmount(e.target.value)}
+            placeholder={currentOption.crypto === 'BTC' ? "1000000" : "100000000"}
             required
           />
         </div>
 
-        {swapDirection === 'eth-to-btc' && (
+        {swapDirection.startsWith('eth-to-') && (
           <div className="form-group">
-            <label>Bitcoin Address:</label>
+            <label>{currentOption.crypto} Address:</label>
             <input
               type="text"
-              value={btcAddress}
-              onChange={(e) => setBtcAddress(e.target.value)}
-              placeholder="bc1q..."
+              value={cryptoAddress}
+              onChange={(e) => setCryptoAddress(e.target.value)}
+              placeholder={currentOption.crypto === 'BTC' ? "bc1q..." : "D..."}
               required
             />
           </div>
         )}
 
-        {swapDirection === 'btc-to-eth' && (
+        {swapDirection.endsWith('-to-eth') && (
           <div className="form-group">
             <label>Ethereum Address (optional):</label>
             <input
@@ -259,6 +264,9 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
             )}
             {swapResult.btcSwapAddress && (
               <p><strong>Bitcoin Address:</strong> <code>{swapResult.btcSwapAddress}</code></p>
+            )}
+            {swapResult.dogeSwapAddress && (
+              <p><strong>Dogecoin Address:</strong> <code>{swapResult.dogeSwapAddress}</code></p>
             )}
             <p className="message">{swapResult.message}</p>
           </div>

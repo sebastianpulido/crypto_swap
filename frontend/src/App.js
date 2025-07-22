@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import SwapInterface from './components/SwapInterface';
 import SwapStatus from './components/SwapStatus';
 import WalletConnection from './components/WalletConnection';
+import FusionSwapInterface from './components/FusionSwapInterface';
 import './App.css';
 
 function App() {
@@ -10,11 +11,15 @@ function App() {
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
   const [activeSwaps, setActiveSwaps] = useState([]);
-  const [currentView, setCurrentView] = useState('swap');
+  const [currentView, setCurrentView] = useState('fusion-swap');
+  const [fusionMode, setFusionMode] = useState(true);
 
   useEffect(() => {
     checkWalletConnection();
     fetchActiveSwaps();
+    // Check if Fusion mode is enabled from environment
+    const fusionEnabled = process.env.REACT_APP_FUSION_MODE === 'true';
+    setFusionMode(fusionEnabled);
   }, []);
 
   const checkWalletConnection = async () => {
@@ -51,7 +56,6 @@ function App() {
 
   const fetchActiveSwaps = async () => {
     try {
-      // Use fallback URL if environment variable is not available
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
       console.log('Fetching swaps from:', `${apiUrl}/api/swaps`);
       
@@ -69,15 +73,23 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>1inch Cross-Chain Swap (Fusion+)</h1>
-        <p>Ethereum ↔ Bitcoin Atomic Swaps</p>
+        <h1>1inch Fusion+ Cross-Chain Extension</h1>
+        <p>Ethereum ↔ Bitcoin ↔ Dogecoin Atomic Swaps</p>
         
         <nav className="nav-tabs">
+          {fusionMode && (
+            <button 
+              className={currentView === 'fusion-swap' ? 'active' : ''}
+              onClick={() => setCurrentView('fusion-swap')}
+            >
+              Fusion+ Swap
+            </button>
+          )}
           <button 
-            className={currentView === 'swap' ? 'active' : ''}
-            onClick={() => setCurrentView('swap')}
+            className={currentView === 'direct-swap' ? 'active' : ''}
+            onClick={() => setCurrentView('direct-swap')}
           >
-            New Swap
+            Direct Swap
           </button>
           <button 
             className={currentView === 'status' ? 'active' : ''}
@@ -96,7 +108,16 @@ function App() {
 
         {account && (
           <>
-            {currentView === 'swap' && (
+            {currentView === 'fusion-swap' && fusionMode && (
+              <FusionSwapInterface 
+                signer={signer}
+                provider={provider}
+                account={account}
+                onSwapCreated={fetchActiveSwaps}
+              />
+            )}
+
+            {currentView === 'direct-swap' && (
               <SwapInterface 
                 signer={signer}
                 provider={provider}
