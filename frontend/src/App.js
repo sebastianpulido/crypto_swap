@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import SwapInterface from './components/SwapInterface';
 import SwapStatus from './components/SwapStatus';
@@ -15,28 +15,7 @@ function App() {
   const [currentView, setCurrentView] = useState('fusion-swap');
   const [fusionMode, setFusionMode] = useState(true);
 
-  useEffect(() => {
-    checkWalletConnection();
-    fetchActiveSwaps();
-    // Check if Fusion mode is enabled from environment
-    const fusionEnabled = process.env.REACT_APP_FUSION_MODE === 'true';
-    setFusionMode(fusionEnabled);
-  }, []);
-
-  const checkWalletConnection = async () => {
-    if (window.ethereum) {
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts.length > 0) {
-          connectWallet();
-        }
-      } catch (error) {
-        console.error('Error checking wallet connection:', error);
-      }
-    }
-  };
-
-  const connectWallet = async () => {
+  const connectWallet = useCallback(async () => {
     if (window.ethereum) {
       try {
         await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -53,9 +32,22 @@ function App() {
     } else {
       alert('Please install MetaMask to use this application');
     }
-  };
+  }, []);
 
-  const fetchActiveSwaps = async () => {
+  const checkWalletConnection = useCallback(async () => {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          connectWallet();
+        }
+      } catch (error) {
+        console.error('Error checking wallet connection:', error);
+      }
+    }
+  }, [connectWallet]);
+
+  const fetchActiveSwaps = useCallback(async () => {
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
       console.log('Fetching swaps from:', `${apiUrl}/api/swaps`);
@@ -69,7 +61,15 @@ function App() {
     } catch (error) {
       console.error('Error fetching swaps:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    checkWalletConnection();
+    fetchActiveSwaps();
+    // Check if Fusion mode is enabled from environment
+    const fusionEnabled = process.env.REACT_APP_FUSION_MODE === 'true';
+    setFusionMode(fusionEnabled);
+  }, [checkWalletConnection, fetchActiveSwaps]);
 
   const handleAcceptSwap = (swap) => {
     // Switch to direct swap view and pre-fill with counter-swap details
