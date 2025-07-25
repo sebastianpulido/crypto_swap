@@ -5,6 +5,7 @@ import SwapStatus from './components/SwapStatus';
 import WalletConnection from './components/WalletConnection';
 import FusionSwapInterface from './components/FusionSwapInterface';
 import SwapBrowser from './components/SwapBrowser';
+import TransactionHistory from './components/TransactionHistory';
 import './App.css';
 
 function App() {
@@ -126,6 +127,13 @@ function App() {
             <span className="nav-icon">📊</span>
             My Swaps
           </button>
+          <button 
+            className={currentView === 'history' ? 'active' : ''}
+            onClick={() => setCurrentView('history')}
+          >
+            <span className="nav-icon">📋</span>
+            Transaction History
+          </button>
         </nav>
       </header>
 
@@ -167,6 +175,12 @@ function App() {
                 swaps={activeSwaps}
                 signer={signer}
                 onRefresh={fetchActiveSwaps}
+              />
+            )}
+
+            {currentView === 'history' && (
+              <TransactionHistory 
+                account={account}
               />
             )}
           </div>

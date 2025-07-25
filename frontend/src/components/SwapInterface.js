@@ -64,6 +64,41 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated, acceptedSwap 
     return counterMap[originalType] || 'eth-to-btc';
   };
 
+  // Function to save transaction to localStorage
+  const saveTransactionToHistory = (transactionData) => {
+    if (!account) return;
+    
+    const storageKey = `swapHistory_${account}`;
+    const existing = localStorage.getItem(storageKey);
+    let transactions = [];
+    
+    if (existing) {
+      try {
+        transactions = JSON.parse(existing);
+      } catch (error) {
+        console.error('Error parsing existing transactions:', error);
+        transactions = [];
+      }
+    }
+    
+    // Add new transaction
+    transactions.push({
+      ...transactionData,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Keep only last 50 transactions to prevent localStorage bloat
+    if (transactions.length > 50) {
+      transactions = transactions.slice(-50);
+    }
+    
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(transactions));
+    } catch (error) {
+      console.error('Error saving transaction to localStorage:', error);
+    }
+  };
+
   const formatAmount = (amount, currency) => {
     if (currency === 'ETH') {
       const ethAmount = parseFloat(amount) / Math.pow(10, 18);
@@ -144,15 +179,32 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated, acceptedSwap 
           timelock: timelockTimestamp
         })
       });
+
+      const resultMessage = isAcceptingSwap 
+        ? `✅ Counter-swap created! You've accepted the atomic swap.`
+        : `Ethereum to ${cryptoType.toUpperCase()} swap initiated successfully!`;
       
       setSwapResult({
         swapId,
         secret,
         hashedSecret,
         txHash: tx.hash,
-        message: isAcceptingSwap 
-          ? `✅ Counter-swap created! You've accepted the atomic swap.`
-          : `Ethereum to ${cryptoType.toUpperCase()} swap initiated successfully!`
+        message: resultMessage
+      });
+
+      // Save to transaction history
+      saveTransactionToHistory({
+        type: isAcceptingSwap ? 'counter_swap_created' : 'swap_created',
+        swapId,
+        secret,
+        hashedSecret,
+        txHash: tx.hash,
+        swapDirection,
+        ethAmount,
+        cryptoAmount,
+        cryptoType,
+        cryptoAddress,
+        message: resultMessage
       });
 
       onSwapCreated();
@@ -199,15 +251,31 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated, acceptedSwap 
       });
 
       const result = await response.json();
+
+      const resultMessage = isAcceptingSwap 
+        ? `✅ Counter-swap created! Please fund the ${cryptoType.toUpperCase()} address to complete the atomic swap.`
+        : `${cryptoType.toUpperCase()} to Ethereum swap initiated! Please fund the ${cryptoType.toUpperCase()} address.`;
       
       setSwapResult({
         swapId,
         secret,
         hashedSecret,
         [cryptoType + 'SwapAddress']: result.data[cryptoType + 'SwapAddress'],
-        message: isAcceptingSwap 
-          ? `✅ Counter-swap created! Please fund the ${cryptoType.toUpperCase()} address to complete the atomic swap.`
-          : `${cryptoType.toUpperCase()} to Ethereum swap initiated! Please fund the ${cryptoType.toUpperCase()} address.`
+        message: resultMessage
+      });
+
+      // Save to transaction history
+      saveTransactionToHistory({
+        type: isAcceptingSwap ? 'counter_swap_created' : 'swap_created',
+        swapId,
+        secret,
+        hashedSecret,
+        swapDirection,
+        ethAmount,
+        cryptoAmount,
+        cryptoType,
+        [cryptoType + 'SwapAddress']: result.data[cryptoType + 'SwapAddress'],
+        message: resultMessage
       });
 
       onSwapCreated();
@@ -356,89 +424,98 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated, acceptedSwap 
               value={ethAddress}
               onChange={(e) => setEthAddress(e.target.value)}
               placeholder={account}
-              disabled={isAcceptingSwap && ethAddress}
-              className={isAcceptingSwap && ethAddress ? 'disabled' : ''}
+              disabled={isAcceptingSwap}
+              className={isAcceptingSwap ? 'disabled' : ''}
             />
           </div>
         )}
 
-        <div className="form-group">
-          <label className="checkbox-label">
+        <div className="form-row">
+          <div className="form-group">
+            <label>Timelock (hours):</label>
             <input
-              type="checkbox"
-              checked={useCustomHashedSecret}
-              onChange={(e) => setUseCustomHashedSecret(e.target.checked)}
+              type="number"
+              min="1"
+              max="168"
+              value={timelock}
+              onChange={(e) => setTimelock(e.target.value)}
               disabled={isAcceptingSwap}
+              className={isAcceptingSwap ? 'disabled' : ''}
             />
-            <span>Use custom hashed secret (for responding to existing swaps)</span>
-          </label>
+          </div>
+
+          <div className="form-group checkbox-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={useCustomHashedSecret}
+                onChange={(e) => setUseCustomHashedSecret(e.target.checked)}
+                disabled={isAcceptingSwap}
+              />
+              Use Custom Hashed Secret
+            </label>
+          </div>
         </div>
 
         {useCustomHashedSecret && (
           <div className="form-group">
-            <label>Hashed Secret:</label>
+            <label>Hashed Secret (32 bytes hex):</label>
             <input
               type="text"
               value={customHashedSecret}
               onChange={(e) => setCustomHashedSecret(e.target.value)}
               placeholder="0x..."
-              required
               disabled={isAcceptingSwap}
               className={isAcceptingSwap ? 'disabled' : ''}
             />
-            <small>
-              {isAcceptingSwap 
-                ? "Using hashed secret from the original swap" 
-                : "Enter the hashed secret from the original swap you're responding to"
-              }
-            </small>
           </div>
         )}
 
-        <div className="form-group">
-          <label>Timelock (hours):</label>
-          <input
-            type="number"
-            min="1"
-            max="168"
-            value={timelock}
-            onChange={(e) => setTimelock(e.target.value)}
-            required
-            disabled={isAcceptingSwap}
-            className={isAcceptingSwap ? 'disabled' : ''}
-          />
-          {isAcceptingSwap && (
-            <small>Timelock set to match the original swap expiration</small>
-          )}
-        </div>
-
-        <button type="submit" disabled={loading} className="submit-btn">
-          {loading ? 'Creating Swap...' : (isAcceptingSwap ? '✅ Accept & Create Counter-Swap' : 'Create Atomic Swap')}
+        <button type="submit" disabled={loading} className="submit-button">
+          {loading ? 'Creating Swap...' : (isAcceptingSwap ? 'Create Counter-Swap' : 'Create Swap')}
         </button>
       </form>
 
       {swapResult && (
         <div className="swap-result">
-          <h3>{isAcceptingSwap ? '🎉 Counter-Swap Created!' : 'Swap Created Successfully!'}</h3>
+          <h3>{isAcceptingSwap ? '🎯 Counter-Swap Created!' : '✅ Swap Created Successfully!'}</h3>
           <div className="result-details">
-            <p><strong>Swap ID:</strong> <code>{swapResult.swapId}</code></p>
+            <div className="result-item">
+              <span className="label">Swap ID:</span>
+              <span className="value">{swapResult.swapId}</span>
+            </div>
             {swapResult.secret && (
-              <p><strong>Secret:</strong> <code>0x{swapResult.secret}</code></p>
+              <div className="result-item">
+                <span className="label">Secret:</span>
+                <span className="value">{swapResult.secret}</span>
+              </div>
             )}
-            <p><strong>Hashed Secret:</strong> <code>{swapResult.hashedSecret}</code></p>
+            <div className="result-item">
+              <span className="label">Hashed Secret:</span>
+              <span className="value">{swapResult.hashedSecret}</span>
+            </div>
             {swapResult.txHash && (
-              <p><strong>Transaction Hash:</strong> <code>{swapResult.txHash}</code></p>
+              <div className="result-item">
+                <span className="label">Transaction Hash:</span>
+                <span className="value">{swapResult.txHash}</span>
+              </div>
             )}
             {swapResult.btcSwapAddress && (
-              <p><strong>Bitcoin Address:</strong> <code>{swapResult.btcSwapAddress}</code></p>
+              <div className="result-item">
+                <span className="label">BTC Swap Address:</span>
+                <span className="value">{swapResult.btcSwapAddress}</span>
+              </div>
             )}
             {swapResult.dogeSwapAddress && (
-              <p><strong>Dogecoin Address:</strong> <code>{swapResult.dogeSwapAddress}</code></p>
+              <div className="result-item">
+                <span className="label">DOGE Swap Address:</span>
+                <span className="value">{swapResult.dogeSwapAddress}</span>
+              </div>
             )}
-            <p className="message">{swapResult.message}</p>
           </div>
-          <div className="warning">
-            <strong>⚠️ Important:</strong> {swapResult.secret ? 'Save the secret securely! You\'ll need it to complete the swap.' : 'This is a response swap using a custom hashed secret.'}
+          <p className="result-message">{swapResult.message}</p>
+          <div className="result-note">
+            <p>💡 <strong>Important:</strong> This information has been saved to your transaction history. You can view it anytime in the "Transaction History" tab.</p>
           </div>
         </div>
       )}
