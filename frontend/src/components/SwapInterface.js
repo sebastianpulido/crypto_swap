@@ -79,7 +79,7 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
 
       // Register swap with backend
       const endpoint = cryptoType === 'btc' ? 'eth-to-btc' : 'eth-to-doge';
-      const response = await fetch(`http://localhost:3001/api/swap/${endpoint}/initiate`, {
+      await fetch(`http://localhost:3001/api/swap/${endpoint}/initiate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -91,8 +91,6 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
           timelock: timelockTimestamp
         })
       });
-
-      const result = await response.json();
       
       setSwapResult({
         swapId,

@@ -340,3 +340,129 @@ app.listen(PORT, async () => {
 });
 
 module.exports = app;
+
+/**
+ * Check funding status for a swap
+ */
+app.post('/api/swap/:swapId/check-funding', async (req, res) => {
+    try {
+        const { swapId } = req.params;
+        const swap = activeSwaps.get(swapId);
+
+        if (!swap) {
+            return res.status(404).json({
+                success: false,
+                error: 'Swap not found'
+            });
+        }
+
+        let fundingStatus = {
+            ethFunded: false,
+            btcFunded: false,
+            readyForWithdrawal: false,
+            message: ''
+        };
+
+        // Check Ethereum funding (real check)
+        if (ethContract && (swap.type === 'eth-to-btc' || swap.type === 'eth-to-doge')) {
+            try {
+                const ethSwap = await ethContract.getSwap(swapId);
+                fundingStatus.ethFunded = ethSwap.amount > 0 && !ethSwap.withdrawn && !ethSwap.refunded;
+            } catch (error) {
+                fundingStatus.ethFunded = false;
+            }
+        }
+
+        // Check Bitcoin funding (simulated for local development)
+        if (swap.btcSwapAddress) {
+            // In a real implementation, this would query Bitcoin blockchain
+            // For demo purposes, we'll simulate based on time elapsed
+            const timeElapsed = Date.now() - swap.createdAt;
+            const simulatedFundingDelay = 30000; // 30 seconds
+            
+            // Simulate that Bitcoin gets "funded" after 30 seconds
+            fundingStatus.btcFunded = timeElapsed > simulatedFundingDelay;
+            
+            if (!fundingStatus.btcFunded) {
+                fundingStatus.message = `Bitcoin funding simulated. Will be "funded" in ${Math.max(0, Math.ceil((simulatedFundingDelay - timeElapsed) / 1000))} seconds.`;
+            }
+        }
+
+        // Determine if ready for withdrawal
+        if (swap.type === 'eth-to-btc') {
+            fundingStatus.readyForWithdrawal = fundingStatus.ethFunded;
+            if (fundingStatus.readyForWithdrawal) {
+                fundingStatus.message = '✅ ETH is funded! You can withdraw by entering the secret.';
+            } else {
+                fundingStatus.message = '⏳ Waiting for ETH funding confirmation...';
+            }
+        } else if (swap.type === 'btc-to-eth') {
+            fundingStatus.readyForWithdrawal = fundingStatus.btcFunded;
+            if (fundingStatus.readyForWithdrawal) {
+                fundingStatus.message = '✅ BTC is "funded" (simulated)! You can withdraw by entering the secret.';
+            }
+        }
+
+        // Update swap with funding info
+        swap.fundingStatus = fundingStatus;
+        swap.lastFundingCheck = Date.now();
+        activeSwaps.set(swapId, swap);
+
+        res.json({
+            success: true,
+            data: {
+                swapId,
+                fundingStatus,
+                swapType: swap.type,
+                btcSwapAddress: swap.btcSwapAddress,
+                ethAmount: swap.ethAmount,
+                btcAmount: swap.btcAmount
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * Simulate Bitcoin funding (for demo purposes)
+ */
+app.post('/api/swap/:swapId/simulate-btc-funding', async (req, res) => {
+    try {
+        const { swapId } = req.params;
+        const swap = activeSwaps.get(swapId);
+
+        if (!swap) {
+            return res.status(404).json({
+                success: false,
+                error: 'Swap not found'
+            });
+        }
+
+        // Mark as funded
+        if (!swap.fundingStatus) {
+            swap.fundingStatus = {};
+        }
+        swap.fundingStatus.btcFunded = true;
+        swap.fundingStatus.simulatedFunding = true;
+        swap.fundingStatus.message = '✅ Bitcoin funding simulated successfully!';
+        
+        activeSwaps.set(swapId, swap);
+
+        res.json({
+            success: true,
+            data: {
+                message: 'Bitcoin funding simulated successfully',
+                fundingStatus: swap.fundingStatus
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
