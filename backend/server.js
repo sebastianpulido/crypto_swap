@@ -307,14 +307,44 @@ app.post('/api/swap/:swapId/complete', async (req, res) => {
 });
 
 /**
- * Get all active swaps
+ * Get all active swaps with real-time blockchain status
  */
-app.get('/api/swaps', (req, res) => {
+app.get('/api/swaps', async (req, res) => {
     try {
-        const swaps = Array.from(activeSwaps.entries()).map(([id, swap]) => ({
-            id,
-            ...swap
-        }));
+        const swaps = [];
+        
+        for (const [id, swap] of activeSwaps.entries()) {
+            let updatedSwap = { ...swap, id };
+            
+            // Check blockchain status if contract is available
+            if (ethContract) {
+                try {
+                    const blockchainSwap = await ethContract.getSwap(id);
+                    
+                    // Update status based on blockchain state
+                    if (blockchainSwap.withdrawn) {
+                        updatedSwap.status = 'completed';
+                        updatedSwap.completedAt = updatedSwap.completedAt || Date.now();
+                    } else if (blockchainSwap.refunded) {
+                        updatedSwap.status = 'refunded';
+                        updatedSwap.refundedAt = updatedSwap.refundedAt || Date.now();
+                    } else if (blockchainSwap.amount > 0) {
+                        // Swap exists and is funded but not withdrawn/refunded
+                        if (updatedSwap.status === 'initiated') {
+                            updatedSwap.status = 'funded';
+                        }
+                    }
+                    
+                    // Update the stored swap with blockchain data
+                    activeSwaps.set(id, updatedSwap);
+                } catch (error) {
+                    // If swap doesn't exist on blockchain yet, keep current status
+                    console.log(`Swap ${id} not found on blockchain or error checking:`, error.message);
+                }
+            }
+            
+            swaps.push(updatedSwap);
+        }
 
         res.json({
             success: true,

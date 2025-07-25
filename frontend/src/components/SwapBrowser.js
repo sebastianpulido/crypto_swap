@@ -18,17 +18,16 @@ const SwapBrowser = ({ onAcceptSwap }) => {
             const result = await response.json();
             
             if (result.success) {
-                // Filter out completed swaps and show only open ones
+                // Filter out completed and refunded swaps, show only open ones
                 const openSwaps = result.data.filter(swap => 
-                    swap.status === 'initiated' && 
-                    swap.createdAt > Date.now() - (24 * 60 * 60 * 1000) // Last 24 hours
+                    swap.status === 'initiated' || swap.status === 'funded'
                 );
                 setAvailableSwaps(openSwaps);
             } else {
                 setError('Failed to fetch swaps');
             }
         } catch (err) {
-            setError('Network error: ' + err.message);
+            setError('Failed to fetch swaps: ' + err.message);
         } finally {
             setLoading(false);
         }

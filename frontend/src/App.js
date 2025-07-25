@@ -14,6 +14,7 @@ function App() {
   const [activeSwaps, setActiveSwaps] = useState([]);
   const [currentView, setCurrentView] = useState('fusion-swap');
   const [fusionMode, setFusionMode] = useState(true);
+  const [acceptedSwap, setAcceptedSwap] = useState(null);
 
   const connectWallet = useCallback(async () => {
     if (window.ethereum) {
@@ -72,23 +73,24 @@ function App() {
   }, [checkWalletConnection, fetchActiveSwaps]);
 
   const handleAcceptSwap = (swap) => {
-    // Switch to direct swap view and pre-fill with counter-swap details
+    // Set the accepted swap data and switch to direct swap view
+    setAcceptedSwap(swap);
     setCurrentView('direct-swap');
-    
-    // Show alert with instructions
-    alert(`🎯 Creating Counter-Swap!\n\n` +
-          `Original Swap: ${swap.type}\n` +
-          `You need to create the opposite swap:\n\n` +
-          `• Use the SAME hashed secret: ${swap.hashedSecret}\n` +
-          `• Match the amounts exactly\n` +
-          `• This will complete the atomic swap!`);
+  };
+
+  const handleSwapCreated = () => {
+    // Clear accepted swap after creating counter-swap
+    setAcceptedSwap(null);
+    fetchActiveSwaps();
   };
 
   return (
     <div className="App">
       <header className="App-header">
-        <h1>1inch Fusion+ Cross-Chain Extension</h1>
-        <p>Ethereum ↔ Bitcoin ↔ Dogecoin Atomic Swaps</p>
+        <div className="header-content">
+          <h1>🔗 Atomic Swap Exchange</h1>
+          <p>Ethereum ↔ Bitcoin ↔ Dogecoin Cross-Chain Swaps</p>
+        </div>
         
         <nav className="nav-tabs">
           {fusionMode && (
@@ -96,25 +98,32 @@ function App() {
               className={currentView === 'fusion-swap' ? 'active' : ''}
               onClick={() => setCurrentView('fusion-swap')}
             >
+              <span className="nav-icon">⚡</span>
               Fusion+ Swap
             </button>
           )}
           <button 
             className={currentView === 'direct-swap' ? 'active' : ''}
-            onClick={() => setCurrentView('direct-swap')}
+            onClick={() => {
+              setCurrentView('direct-swap');
+              setAcceptedSwap(null); // Clear any accepted swap when manually navigating
+            }}
           >
+            <span className="nav-icon">🔄</span>
             Create Swap
           </button>
           <button 
             className={currentView === 'browse-swaps' ? 'active' : ''}
             onClick={() => setCurrentView('browse-swaps')}
           >
-            🔍 Browse Swaps
+            <span className="nav-icon">🔍</span>
+            Browse Swaps
           </button>
           <button 
             className={currentView === 'status' ? 'active' : ''}
             onClick={() => setCurrentView('status')}
           >
+            <span className="nav-icon">📊</span>
             My Swaps
           </button>
         </nav>
@@ -127,7 +136,7 @@ function App() {
         />
 
         {account && (
-          <>
+          <div className="content-container">
             {currentView === 'fusion-swap' && fusionMode && (
               <FusionSwapInterface 
                 signer={signer}
@@ -142,7 +151,8 @@ function App() {
                 signer={signer}
                 provider={provider}
                 account={account}
-                onSwapCreated={fetchActiveSwaps}
+                onSwapCreated={handleSwapCreated}
+                acceptedSwap={acceptedSwap}
               />
             )}
 
@@ -159,7 +169,7 @@ function App() {
                 onRefresh={fetchActiveSwaps}
               />
             )}
-          </>
+          </div>
         )}
       </main>
     </div>

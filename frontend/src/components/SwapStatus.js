@@ -15,6 +15,13 @@ const SwapStatus = ({ swaps, signer, onRefresh }) => {
       return;
     }
 
+    // Check if swap is already completed
+    const currentSwap = swaps.find(s => s.id === swapId);
+    if (currentSwap && currentSwap.status === 'completed') {
+      alert('This swap has already been withdrawn!');
+      return;
+    }
+
     try {
       setLoading(true);
       
@@ -24,14 +31,57 @@ const SwapStatus = ({ swaps, signer, onRefresh }) => {
         signer
       );
 
-      const tx = await contract.withdraw(swapId, secret);
+      // First check if the swap is already withdrawn on the blockchain
+      try {
+        const blockchainSwap = await contract.getSwap(swapId);
+        console.log('Blockchain swap status:', blockchainSwap); // Debug log
+        if (blockchainSwap.withdrawn) {
+          alert('This swap has already been withdrawn on the blockchain!');
+          onRefresh(); // Refresh to update the UI
+          return;
+        }
+      } catch (error) {
+        console.log('Could not check swap status:', error.message);
+      }
+
+      // Format the secret properly - ensure it's a valid bytes32
+      let formattedSecret = secret;
+      if (!secret.startsWith('0x')) {
+        formattedSecret = '0x' + secret;
+      }
+      
+      console.log('Using secret:', formattedSecret); // Debug log
+      
+      // Ensure it's 32 bytes (64 hex characters + 0x)
+      if (formattedSecret.length !== 66) {
+        alert('Secret must be exactly 32 bytes (64 hex characters)');
+        return;
+      }
+
+      console.log('Attempting withdrawal for swap:', swapId); // Debug log
+      const tx = await contract.withdraw(swapId, formattedSecret);
       await tx.wait();
 
       alert('Swap withdrawn successfully!');
-      onRefresh();
+      setSecret(''); // Clear the secret input
+      setSelectedSwap(''); // Clear the selected swap
+      onRefresh(); // Refresh the swap list
     } catch (error) {
       console.error('Error withdrawing swap:', error);
-      alert('Error withdrawing swap: ' + error.message);
+      
+      // Handle specific error cases
+      if (error.message.includes('Already withdrawn')) {
+        alert('This swap has already been withdrawn!');
+        onRefresh(); // Refresh to update the UI
+      } else if (error.message.includes('Invalid secret')) {
+        alert('Invalid secret provided. Please check the secret and try again.');
+      } else if (error.message.includes('Timelock expired')) {
+        alert('This swap has expired and can no longer be withdrawn.');
+      } else if (error.message.includes('INVALID_ARGUMENT')) {
+        alert('Invalid secret format. Please ensure the secret is a valid 64-character hex string.');
+      } else {
+        alert('Error withdrawing swap: ' + error.message);
+      }
     } finally {
       setLoading(false);
     }

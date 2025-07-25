@@ -79,35 +79,6 @@ Any funds sent to them on Mainnet or any other live network WILL BE LOST.
 
 [32meth_blockNumber[0m
 [32meth_blockNumber (2)[0m
-[31meth_getBalance[0m
-
-  Received invalid block tag 1. Latest block number is 0
-
-[31meth_getBalance[0m
-
-  Received invalid block tag 1. Latest block number is 0
-
-[32meth_blockNumber[0m
-[31meth_getBalance[0m
-
-  Received invalid block tag 1. Latest block number is 0
-
-[31meth_getBalance[0m
-
-  Received invalid block tag 1. Latest block number is 0
-
-[32meth_gasPrice[0m
-[32meth_blockNumber[0m
-[31meth_getBalance[0m
-
-  Received invalid block tag 1. Latest block number is 0
-
-[31meth_getBalance[0m
-
-  Received invalid block tag 1. Latest block number is 0
-
-[32meth_blockNumber[0m
-[32meth_blockNumber (2)[0m
 [32meth_estimateGas[0m
 [32meth_getCode[0m
 [32meth_getCode (2)[0m
@@ -162,14 +133,316 @@ Any funds sent to them on Mainnet or any other live network WILL BE LOST.
 
 [32meth_getTransactionCount[0m
 [32meth_sendRawTransaction[0m
-  Transaction: 0x555dcec271a0f11d30797076fc63c8a364e3e0633286b72d1953fb35c08e18f8
+  Transaction: 0x4cba952c79800cbc27129676c2971f8090bb00f431d67ea417fe8eb3c115c12d
   From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
   To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
-  Value:       0.97 ETH
-  Gas used:    25930 of 25930
-  Block #1:    0x891940184109f147ad0a0513b2bde83dbc862e2158a059b0c5df183d7455dd52
+  Value:       0.1 ETH
+  Gas used:    25870 of 25870
+  Block #1:    0x91ac804cf2241d7115d12ae9e6aaedd47c9fcbdc1c7865d356b92d09c96c546e
 
 [32meth_getTransactionReceipt[0m
 [32meth_blockNumber[0m
+[32meth_getBlockByNumber[0m
 [32meth_getBalance[0m
 [32meth_getBalance (2)[0m
+[32meth_gasPrice[0m
+[32meth_blockNumber[0m
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_blockNumber[0m
+[32meth_estimateGas[0m
+[32meth_getCode[0m
+[32meth_getCode (2)[0m
+[32meth_blockNumber[0m
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_getTransactionCount[0m
+[32meth_sendRawTransaction[0m
+  Transaction: 0x9160eadde7311cfc8a40f7786b966513202eaf928863fbc7af9230663eba39bb
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+  Value:       0 ETH
+  Gas used:    23720 of 23720
+  Block #2:    0x0e97d521f17bc683e9c68f4b490b29538c007edeaef4b868754d50262206028e
+
+[32meth_getTransactionReceipt[0m
+[32meth_blockNumber[0m
+[32meth_getBlockByNumber[0m
+[32meth_getBalance[0m
+[32meth_getBalance (2)[0m
+[32meth_gasPrice[0m
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_blockNumber[0m
+[32meth_estimateGas[0m
+[32meth_getCode[0m
+[32meth_getCode (2)[0m
+[32meth_blockNumber[0m
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_getTransactionCount[0m
+[32meth_sendRawTransaction[0m
+  Transaction: 0x41fde22a6c9bd0d079fcc253846544bead615a7f0242ced524112a6298a4e7a9
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+  Value:       0 ETH
+  Gas used:    23720 of 23720
+  Block #3:    0xb9e20cce395f648297ab981a3941e8a00809201f58a91a783184a6a1562ad9af
+
+[32meth_getTransactionReceipt[0m
+[32meth_blockNumber[0m
+[32meth_getBlockByNumber[0m
+[32meth_getBalance[0m
+[32meth_getBalance (2)[0m
+[32meth_gasPrice[0m
+[32meth_blockNumber[0m
+[32meth_blockNumber (2)[0m
+[32meth_estimateGas[0m
+[32meth_getCode[0m
+[32meth_getCode (2)[0m
+[32meth_blockNumber[0m
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_getTransactionCount[0m
+[32meth_sendRawTransaction[0m
+  Transaction: 0x7b1db7d5ba7d5562a919d79cac32fe0fe37f4e2c66a52babae810c303690fe1a
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+  Value:       0.1 ETH
+  Gas used:    25900 of 25900
+  Block #4:    0x6e81002de987de9f54f0adb287ec3f76ed5bb3050139bdac998f2364fd941fc2
+
+[32meth_getTransactionReceipt[0m
+[32meth_blockNumber[0m
+[32meth_blockNumber (2)[0m
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_estimateGas[0m
+[32meth_blockNumber[0m
+[32meth_getTransactionCount[0m
+[32meth_sendRawTransaction[0m
+  Transaction: 0x9315923b4c970cbad9b2938a433542b6a565b757f34ba0ae4c6f4770a1d891df
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+  Value:       0 ETH
+  Gas used:    23720 of 23720
+  Block #5:    0xd65b8e7fb714aac1f50da695e94efdb1ff6f5677b65d8852f6f668c797707b16
+
+[32meth_getTransactionReceipt[0m
+[32meth_blockNumber[0m
+[32meth_getBlockByNumber[0m
+[32meth_getBalance[0m
+[32meth_getBalance (2)[0m
+[32meth_getTransactionReceipt[0m
+[32meth_getBlockByHash[0m
+[32meth_gasPrice[0m
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_blockNumber[0m
+[32meth_estimateGas[0m
+[32meth_getCode[0m
+[32meth_getCode (2)[0m
+[32meth_blockNumber[0m
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_call[0m
+  WARNING: Calling an account which is not a contract
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+
+[32meth_getTransactionCount[0m
+[32meth_sendRawTransaction[0m
+  Transaction: 0x0f7d2bdad8b9db2bcd776490f5d35e1d3137b0fba338f1d4e5965536a589fbc1
+  From:        0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:          0x5fbdb2315678afecb367f032d93f642f64180aa3
+  Value:       0 ETH
+  Gas used:    23720 of 23720
+  Block #6:    0x0b8dc8e862047214ef9580c3e9536d6fac55c9ea3038147ba5269584c5b90f2d
+
+[32meth_getTransactionReceipt[0m
+[32meth_blockNumber[0m
+[32meth_getBlockByNumber[0m
+[32meth_getBalance[0m
+[32meth_getBalance (2)[0m
+[32meth_getTransactionReceipt[0m
+[32meth_getBlockByHash[0m
+[32meth_gasPrice[0m
