@@ -4,6 +4,7 @@ import SwapInterface from './components/SwapInterface';
 import SwapStatus from './components/SwapStatus';
 import WalletConnection from './components/WalletConnection';
 import FusionSwapInterface from './components/FusionSwapInterface';
+import SwapBrowser from './components/SwapBrowser';
 import './App.css';
 
 function App() {
@@ -70,6 +71,19 @@ function App() {
     }
   };
 
+  const handleAcceptSwap = (swap) => {
+    // Switch to direct swap view and pre-fill with counter-swap details
+    setCurrentView('direct-swap');
+    
+    // Show alert with instructions
+    alert(`🎯 Creating Counter-Swap!\n\n` +
+          `Original Swap: ${swap.type}\n` +
+          `You need to create the opposite swap:\n\n` +
+          `• Use the SAME hashed secret: ${swap.hashedSecret}\n` +
+          `• Match the amounts exactly\n` +
+          `• This will complete the atomic swap!`);
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -89,13 +103,19 @@ function App() {
             className={currentView === 'direct-swap' ? 'active' : ''}
             onClick={() => setCurrentView('direct-swap')}
           >
-            Direct Swap
+            Create Swap
+          </button>
+          <button 
+            className={currentView === 'browse-swaps' ? 'active' : ''}
+            onClick={() => setCurrentView('browse-swaps')}
+          >
+            🔍 Browse Swaps
           </button>
           <button 
             className={currentView === 'status' ? 'active' : ''}
             onClick={() => setCurrentView('status')}
           >
-            Swap Status
+            My Swaps
           </button>
         </nav>
       </header>
@@ -123,6 +143,12 @@ function App() {
                 provider={provider}
                 account={account}
                 onSwapCreated={fetchActiveSwaps}
+              />
+            )}
+
+            {currentView === 'browse-swaps' && (
+              <SwapBrowser 
+                onAcceptSwap={handleAcceptSwap}
               />
             )}
             

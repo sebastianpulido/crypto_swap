@@ -11,6 +11,8 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
   const [timelock, setTimelock] = useState(24); // hours
   const [loading, setLoading] = useState(false);
   const [swapResult, setSwapResult] = useState(null);
+  const [useCustomHashedSecret, setUseCustomHashedSecret] = useState(false);
+  const [customHashedSecret, setCustomHashedSecret] = useState('');
 
   const swapOptions = {
     'eth-to-btc': { label: 'Ethereum → Bitcoin', crypto: 'BTC', unit: 'satoshis' },
@@ -41,7 +43,17 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
     try {
       setLoading(true);
       
-      const { secret, hashedSecret } = await generateSecret();
+      let secret, hashedSecret;
+      
+      if (useCustomHashedSecret && customHashedSecret) {
+        hashedSecret = customHashedSecret;
+        secret = null; // We don't know the secret when using custom hashed secret
+      } else {
+        const secretData = await generateSecret();
+        secret = secretData.secret;
+        hashedSecret = secretData.hashedSecret;
+      }
+      
       const swapId = generateSwapId();
       const timelockTimestamp = Math.floor(Date.now() / 1000) + (timelock * 3600);
 
@@ -103,7 +115,17 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
     try {
       setLoading(true);
       
-      const { secret, hashedSecret } = await generateSecret();
+      let secret, hashedSecret;
+      
+      if (useCustomHashedSecret && customHashedSecret) {
+        hashedSecret = customHashedSecret;
+        secret = null; // We don't know the secret when using custom hashed secret
+      } else {
+        const secretData = await generateSecret();
+        secret = secretData.secret;
+        hashedSecret = secretData.hashedSecret;
+      }
+      
       const swapId = generateSwapId();
       const timelockTimestamp = Math.floor(Date.now() / 1000) + (timelock * 3600);
 
@@ -147,6 +169,11 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
     
     if (!ethAmount || !cryptoAmount) {
       alert('Please enter both ETH and crypto amounts');
+      return;
+    }
+
+    if (useCustomHashedSecret && !customHashedSecret) {
+      alert('Please enter the hashed secret or uncheck the custom option');
       return;
     }
 
@@ -236,6 +263,31 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
         )}
 
         <div className="form-group">
+          <label>
+            <input
+              type="checkbox"
+              checked={useCustomHashedSecret}
+              onChange={(e) => setUseCustomHashedSecret(e.target.checked)}
+            />
+            Use custom hashed secret (for responding to existing swaps)
+          </label>
+        </div>
+
+        {useCustomHashedSecret && (
+          <div className="form-group">
+            <label>Hashed Secret:</label>
+            <input
+              type="text"
+              value={customHashedSecret}
+              onChange={(e) => setCustomHashedSecret(e.target.value)}
+              placeholder="0x..."
+              required
+            />
+            <small>Enter the hashed secret from the original swap you're responding to</small>
+          </div>
+        )}
+
+        <div className="form-group">
           <label>Timelock (hours):</label>
           <input
             type="number"
@@ -257,7 +309,9 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
           <h3>Swap Created Successfully!</h3>
           <div className="result-details">
             <p><strong>Swap ID:</strong> {swapResult.swapId}</p>
-            <p><strong>Secret:</strong> <code>{swapResult.secret}</code></p>
+            {swapResult.secret && (
+              <p><strong>Secret:</strong> <code>{swapResult.secret}</code></p>
+            )}
             <p><strong>Hashed Secret:</strong> <code>{swapResult.hashedSecret}</code></p>
             {swapResult.txHash && (
               <p><strong>Transaction Hash:</strong> <code>{swapResult.txHash}</code></p>
@@ -271,7 +325,7 @@ const SwapInterface = ({ signer, provider, account, onSwapCreated }) => {
             <p className="message">{swapResult.message}</p>
           </div>
           <div className="warning">
-            <strong>⚠️ Important:</strong> Save the secret securely! You'll need it to complete the swap.
+            <strong>⚠️ Important:</strong> {swapResult.secret ? 'Save the secret securely! You\'ll need it to complete the swap.' : 'This is a response swap using a custom hashed secret.'}
           </div>
         </div>
       )}
