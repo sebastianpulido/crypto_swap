@@ -15,75 +15,205 @@ const SwapStatus = ({ swaps, signer, onRefresh }) => {
       return;
     }
 
-    // Check if swap is already completed
-    const currentSwap = swaps.find(s => s.id === swapId);
-    if (currentSwap && currentSwap.status === 'completed') {
-      alert('This swap has already been withdrawn!');
-      return;
-    }
-
     try {
       setLoading(true);
       
-      const contract = new ethers.Contract(
-        AtomicSwapContract.address,
-        AtomicSwapContract.abi,
-        signer
-      );
-
-      // First check if the swap is already withdrawn on the blockchain
-      try {
-        const blockchainSwap = await contract.getSwap(swapId);
-        console.log('Blockchain swap status:', blockchainSwap); // Debug log
-        if (blockchainSwap.withdrawn) {
-          alert('This swap has already been withdrawn on the blockchain!');
-          onRefresh(); // Refresh to update the UI
-          return;
-        }
-      } catch (error) {
-        console.log('Could not check swap status:', error.message);
-      }
-
-      // Format the secret properly - ensure it's a valid bytes32
-      let formattedSecret = secret;
-      if (!secret.startsWith('0x')) {
-        formattedSecret = '0x' + secret;
-      }
-      
-      console.log('Using secret:', formattedSecret); // Debug log
-      
-      // Ensure it's 32 bytes (64 hex characters + 0x)
-      if (formattedSecret.length !== 66) {
-        alert('Secret must be exactly 32 bytes (64 hex characters)');
+      // Find the swap in our local data to determine its type
+      const swap = swaps.find(s => s.id === swapId);
+      if (!swap) {
+        alert('❌ Swap not found in local data');
         return;
       }
 
-      console.log('Attempting withdrawal for swap:', swapId); // Debug log
-      const tx = await contract.withdraw(swapId, formattedSecret);
-      await tx.wait();
+      console.log('Attempting withdrawal for swap type:', swap.type);
 
-      alert('Swap withdrawn successfully!');
-      setSecret(''); // Clear the secret input
-      setSelectedSwap(''); // Clear the selected swap
-      onRefresh(); // Refresh the swap list
+      // Handle different swap types
+      if (swap.type === 'btc-to-eth' || swap.type === 'doge-to-eth') {
+        // For BTC/DOGE to ETH swaps, handle via backend simulation
+        await handleNonEthWithdrawal(swapId, secret, swap.type);
+      } else if (swap.type === 'eth-to-btc' || swap.type === 'eth-to-doge') {
+        // For ETH-based swaps, verify on Ethereum blockchain
+        await handleEthWithdrawal(swapId, secret);
+      } else {
+        alert('❌ Unknown swap type: ' + swap.type);
+      }
+      
     } catch (error) {
       console.error('Error withdrawing swap:', error);
-      
-      // Handle specific error cases
-      if (error.message.includes('Already withdrawn')) {
-        alert('This swap has already been withdrawn!');
-        onRefresh(); // Refresh to update the UI
-      } else if (error.message.includes('Invalid secret')) {
-        alert('Invalid secret provided. Please check the secret and try again.');
-      } else if (error.message.includes('Timelock expired')) {
-        alert('This swap has expired and can no longer be withdrawn.');
-      } else if (error.message.includes('INVALID_ARGUMENT')) {
-        alert('Invalid secret format. Please ensure the secret is a valid 64-character hex string.');
-      } else {
-        alert('Error withdrawing swap: ' + error.message);
-      }
+      alert('❌ Error withdrawing swap: ' + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEthWithdrawal = async (swapId, secret) => {
+    const contract = new ethers.Contract(
+      AtomicSwapContract.address,
+      AtomicSwapContract.abi,
+      signer
+    );
+
+    // ENHANCED BLOCKCHAIN CHECK WITH BETTER ERROR HANDLING
+    let blockchainSwap;
+    try {
+      console.log('Checking ETH swap on blockchain:', swapId);
+      blockchainSwap = await contract.getSwap(swapId);
+      console.log('Blockchain swap details:', {
+        withdrawn: blockchainSwap.withdrawn,
+        refunded: blockchainSwap.refunded,
+        amount: blockchainSwap.amount.toString(),
+        timelock: blockchainSwap.timelock.toString(),
+        initiator: blockchainSwap.initiator,
+        participant: blockchainSwap.participant
+      });
+
+      // Check if swap exists (amount > 0 indicates it was created)
+      if (blockchainSwap.amount.toString() === '0' && 
+          blockchainSwap.initiator === ethers.ZeroAddress) {
+        alert('❌ Swap not found on blockchain. Please check the Swap ID.');
+        return;
+      }
+
+      // Check if already withdrawn
+      if (blockchainSwap.withdrawn) {
+        alert('❌ This swap has already been withdrawn on the blockchain!');
+        onRefresh(); // Refresh to update the UI
+        return;
+      }
+
+      // Check if already refunded
+      if (blockchainSwap.refunded) {
+        alert('❌ This swap has already been refunded and cannot be withdrawn!');
+        onRefresh(); // Refresh to update the UI
+        return;
+      }
+
+      // Check if timelock has expired
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (currentTime >= blockchainSwap.timelock) {
+        alert('❌ This swap has expired and can no longer be withdrawn. It can only be refunded by the initiator.');
+        return;
+      }
+
+      // Check if swap has any amount (is funded)
+      if (blockchainSwap.amount.toString() === '0') {
+        alert('❌ This swap is not funded yet!');
+        return;
+      }
+
+    } catch (error) {
+      console.error('Error checking swap on blockchain:', error);
+      
+      // More specific error handling
+      if (error.message.includes('call revert exception') || error.message.includes('BAD_DATA')) {
+        alert('❌ Swap not found on blockchain. The Swap ID may be incorrect or the swap was never created.');
+      } else if (error.message.includes('network')) {
+        alert('❌ Network connection error. Please check your connection and try again.');
+      } else {
+        alert('❌ Could not verify swap status on blockchain. Error: ' + error.message);
+      }
+      return;
+    }
+
+    // Format the secret properly - ensure it's a valid bytes32
+    let formattedSecret = secret.trim();
+    if (!formattedSecret.startsWith('0x')) {
+      formattedSecret = '0x' + formattedSecret;
+    }
+    
+    console.log('Using secret:', formattedSecret);
+    
+    // Ensure it's 32 bytes (64 hex characters + 0x)
+    if (formattedSecret.length !== 66) {
+      alert('❌ Secret must be exactly 32 bytes (64 hex characters)');
+      return;
+    }
+
+    // Validate hex format
+    if (!/^0x[0-9a-fA-F]{64}$/.test(formattedSecret)) {
+      alert('❌ Secret must be a valid hexadecimal string');
+      return;
+    }
+
+    // Verify the secret matches the hashed secret
+    const secretBytes = ethers.getBytes(formattedSecret);
+    const computedHash = ethers.sha256(secretBytes);
+    console.log('Computed hash:', computedHash);
+    console.log('Expected hash:', blockchainSwap.hashedSecret);
+    
+    if (computedHash !== blockchainSwap.hashedSecret) {
+      alert('❌ Invalid secret! The secret does not match the hashed secret for this swap.');
+      return;
+    }
+
+    // Check if user is the participant (allowed to withdraw)
+    const userAddress = await signer.getAddress();
+    if (userAddress.toLowerCase() !== blockchainSwap.participant.toLowerCase()) {
+      alert('❌ Only the participant can withdraw this swap!');
+      return;
+    }
+
+    console.log('All checks passed. Attempting withdrawal for swap:', swapId);
+    
+    // Estimate gas first to catch any revert early
+    try {
+      await contract.withdraw.staticCall(swapId, formattedSecret);
+    } catch (staticError) {
+      console.error('Static call failed:', staticError);
+      if (staticError.message.includes('Already withdrawn')) {
+        alert('❌ This swap has already been withdrawn!');
+        onRefresh();
+        return;
+      } else if (staticError.message.includes('Invalid secret')) {
+        alert('❌ Invalid secret provided!');
+        return;
+      } else if (staticError.message.includes('Timelock expired')) {
+        alert('❌ This swap has expired!');
+        return;
+      } else {
+        alert('❌ Transaction would fail: ' + staticError.message);
+        return;
+      }
+    }
+
+    // Execute the actual withdrawal
+    const tx = await contract.withdraw(swapId, formattedSecret);
+    console.log('Withdrawal transaction sent:', tx.hash);
+    
+    // Wait for confirmation
+    const receipt = await tx.wait();
+    console.log('Withdrawal confirmed:', receipt);
+
+    alert('✅ Swap withdrawn successfully!');
+    setSecret(''); // Clear the secret input
+    setSelectedSwap(''); // Clear the selected swap
+    onRefresh(); // Refresh the swap list
+  };
+
+  const handleNonEthWithdrawal = async (swapId, secret, swapType) => {
+    console.log(`Handling ${swapType} withdrawal via backend simulation`);
+    
+    // For BTC/DOGE swaps, we simulate the withdrawal via backend
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/swap/${swapId}/withdraw`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        alert(`✅ ${swapType.toUpperCase()} swap withdrawn successfully! (Simulated)`);
+        setSecret(''); // Clear the secret input
+        setSelectedSwap(''); // Clear the selected swap
+        onRefresh(); // Refresh the swap list
+      } else {
+        alert('❌ Error withdrawing swap: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error with backend withdrawal:', error);
+      alert('❌ Error communicating with backend: ' + error.message);
     }
   };
 
@@ -91,20 +221,167 @@ const SwapStatus = ({ swaps, signer, onRefresh }) => {
     try {
       setLoading(true);
       
+      // Find the swap in our local data to determine its type
+      const swap = swaps.find(s => s.id === swapId);
+      if (!swap) {
+        alert('❌ Swap not found in local data');
+        return;
+      }
+
+      console.log('Attempting refund for swap type:', swap.type);
+
+      // Handle different swap types
+      if (swap.type === 'btc-to-eth' || swap.type === 'doge-to-eth') {
+        // For BTC/DOGE to ETH swaps, handle via backend simulation
+        await handleNonEthRefund(swapId, swap.type);
+      } else if (swap.type === 'eth-to-btc' || swap.type === 'eth-to-doge') {
+        // For ETH-based swaps, verify on Ethereum blockchain
+        await handleEthRefund(swapId);
+      } else {
+        alert('❌ Unknown swap type: ' + swap.type);
+      }
+      
+    } catch (error) {
+      console.error('Error refunding swap:', error);
+      alert('❌ Error refunding swap: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEthRefund = async (swapId) => {
+    const contract = new ethers.Contract(
+      AtomicSwapContract.address,
+      AtomicSwapContract.abi,
+      signer
+    );
+
+    // Check blockchain state first
+    try {
+      const blockchainSwap = await contract.getSwap(swapId);
+      
+      if (blockchainSwap.withdrawn) {
+        alert('❌ This swap has already been withdrawn and cannot be refunded!');
+        onRefresh();
+        return;
+      }
+
+      if (blockchainSwap.refunded) {
+        alert('❌ This swap has already been refunded!');
+        onRefresh();
+        return;
+      }
+
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (currentTime < blockchainSwap.timelock) {
+        const timeRemaining = blockchainSwap.timelock - currentTime;
+        const hoursRemaining = Math.ceil(timeRemaining / 3600);
+        alert(`❌ Cannot refund yet. Timelock expires in approximately ${hoursRemaining} hours.`);
+        return;
+      }
+
+      const userAddress = await signer.getAddress();
+      if (userAddress.toLowerCase() !== blockchainSwap.initiator.toLowerCase()) {
+        alert('❌ Only the initiator can refund this swap!');
+        return;
+      }
+
+    } catch (error) {
+      console.error('Error checking swap for refund:', error);
+      if (error.message.includes('BAD_DATA')) {
+        alert('❌ Swap not found on blockchain. Cannot refund.');
+      } else {
+        alert('❌ Could not verify swap status for refund.');
+      }
+      return;
+    }
+
+    const tx = await contract.refund(swapId);
+    await tx.wait();
+
+    alert('✅ Swap refunded successfully!');
+    onRefresh();
+  };
+
+  const handleNonEthRefund = async (swapId, swapType) => {
+    console.log(`Handling ${swapType} refund via backend simulation`);
+    
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/swap/${swapId}/refund`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        alert(`✅ ${swapType.toUpperCase()} swap refunded successfully! (Simulated)`);
+        onRefresh(); // Refresh the swap list
+      } else {
+        alert('❌ Error refunding swap: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error with backend refund:', error);
+      alert('❌ Error communicating with backend: ' + error.message);
+    }
+  };
+
+  const fundEthSwap = async (swapId, ethAmount) => {
+    try {
+      setLoading(true);
+      
+      // Check if we're in simulation mode by checking funding status first
+      const fundingResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/swap/${swapId}/check-funding`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const fundingResult = await fundingResponse.json();
+      const isSimulationMode = fundingResult.data?.fundingStatus?.simulationMode;
+      
+      if (isSimulationMode && process.env.REACT_APP_SIMULATE_ETH_FUNDING === 'true') {
+        // Simulate ETH funding
+        alert('🎭 ETH funding simulated! (Simulation mode enabled)');
+        await checkFundingStatus(swapId);
+        return;
+      }
+      
+      // Real ETH funding via blockchain
       const contract = new ethers.Contract(
         AtomicSwapContract.address,
         AtomicSwapContract.abi,
         signer
       );
 
-      const tx = await contract.refund(swapId);
-      await tx.wait();
+      // Check if swap exists and is not already funded
+      const swapDetails = await contract.getSwap(swapId);
+      if (swapDetails.amount.toString() !== '0') {
+        alert('❌ This swap is already funded!');
+        return;
+      }
 
-      alert('Swap refunded successfully!');
-      onRefresh();
+      // Convert ETH amount to wei
+      const amountInWei = ethers.parseEther(ethAmount.toString());
+      
+      // Send ETH to fund the swap
+      const tx = await signer.sendTransaction({
+        to: AtomicSwapContract.address,
+        value: amountInWei,
+        data: contract.interface.encodeFunctionData('fundSwap', [swapId])
+      });
+
+      console.log('Funding transaction sent:', tx.hash);
+      
+      // Wait for confirmation
+      const receipt = await tx.wait();
+      console.log('Funding confirmed:', receipt);
+
+      alert('✅ Swap funded successfully!');
+      onRefresh(); // Refresh the swap list
+      
     } catch (error) {
-      console.error('Error refunding swap:', error);
-      alert('Error refunding swap: ' + error.message);
+      console.error('Error funding swap:', error);
+      alert('❌ Error funding swap: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -114,7 +391,7 @@ const SwapStatus = ({ swaps, signer, onRefresh }) => {
     try {
       setCheckingFunding(true);
       
-      const response = await fetch(`http://localhost:3001/api/swap/${swapId}/check-funding`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/swap/${swapId}/check-funding`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -145,7 +422,7 @@ const SwapStatus = ({ swaps, signer, onRefresh }) => {
     try {
       setLoading(true);
       
-      const response = await fetch(`http://localhost:3001/api/swap/${swapId}/simulate-btc-funding`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/swap/${swapId}/simulate-btc-funding`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -199,9 +476,12 @@ const SwapStatus = ({ swaps, signer, onRefresh }) => {
         borderRadius: '5px',
         backgroundColor: status.readyForWithdrawal ? '#e8f5e8' : '#fff3cd'
       }}>
-        <h4>💰 Funding Status:</h4>
+        <h4>💰 Funding Status {status.simulationMode ? '(Simulation Mode)' : '(Live Mode)'}:</h4>
         <p>ETH Funded: {status.ethFunded ? '✅ Yes' : '❌ No'}</p>
         <p>BTC Funded: {status.btcFunded ? '✅ Yes' : '❌ No'}</p>
+        {status.dogeFunded !== undefined && (
+          <p>DOGE Funded: {status.dogeFunded ? '✅ Yes' : '❌ No'}</p>
+        )}
         <p>Ready for Withdrawal: {status.readyForWithdrawal ? '✅ Yes' : '⏳ No'}</p>
         {status.message && <p><strong>{status.message}</strong></p>}
       </div>
@@ -210,122 +490,136 @@ const SwapStatus = ({ swaps, signer, onRefresh }) => {
 
   return (
     <div className="swap-status">
-      <h2>Swap Status Monitor</h2>
+      <h2>📊 Swap Status Monitor</h2>
       
-      <button onClick={onRefresh} className="refresh-btn">
-        Refresh Swaps
-      </button>
-
       {swaps.length === 0 ? (
-        <p>No active swaps found.</p>
+        <div className="no-swaps">
+          <p>No active swaps found.</p>
+          <p>Create a swap to see it here!</p>
+        </div>
       ) : (
-        <div className="swaps-list">
+        <div className="swaps-grid">
           {swaps.map((swap) => (
             <div key={swap.id} className="swap-card">
               <div className="swap-header">
-                <h3>Swap {swap.id.substring(0, 8)}...</h3>
+                <h3>🔄 {swap.type?.toUpperCase() || 'Unknown'} Swap</h3>
                 <span 
                   className="status-badge"
                   style={{ backgroundColor: getStatusColor(swap.status) }}
                 >
-                  {swap.status}
+                  {swap.status || 'unknown'}
                 </span>
               </div>
               
               <div className="swap-details">
-                <p><strong>Type:</strong> {swap.type}</p>
-                <p><strong>ETH Amount:</strong> {formatAmount(swap.ethAmount)} ETH</p>
-                <p><strong>BTC Amount:</strong> {swap.btcAmount} satoshis</p>
-                <p><strong>Created:</strong> {new Date(swap.createdAt).toLocaleString()}</p>
-                <p><strong>Timelock:</strong> {formatTimestamp(swap.timelock)}</p>
+                <div className="detail-row">
+                  <span className="label">Swap ID:</span>
+                  <span className="value">{swap.id}</span>
+                </div>
                 
-                {swap.btcAddress && (
-                  <p><strong>BTC Address:</strong> <code>{swap.btcAddress}</code></p>
+                <div className="detail-row">
+                  <span className="label">ETH Amount:</span>
+                  <span className="value">{formatAmount(swap.ethAmount)} ETH</span>
+                </div>
+                
+                {swap.btcAmount && (
+                  <div className="detail-row">
+                    <span className="label">BTC Amount:</span>
+                    <span className="value">{swap.btcAmount} satoshis</span>
+                  </div>
                 )}
+                
+                {swap.dogeAmount && (
+                  <div className="detail-row">
+                    <span className="label">DOGE Amount:</span>
+                    <span className="value">{swap.dogeAmount} dogeoshis</span>
+                  </div>
+                )}
+                
+                <div className="detail-row">
+                  <span className="label">Timelock:</span>
+                  <span className="value">{formatTimestamp(swap.timelock)}</span>
+                </div>
+                
+                <div className="detail-row">
+                  <span className="label">Hashed Secret:</span>
+                  <span className="value">{swap.hashedSecret}</span>
+                </div>
                 
                 {swap.btcSwapAddress && (
-                  <p><strong>BTC Swap Address:</strong> <code>{swap.btcSwapAddress}</code></p>
+                  <div className="detail-row">
+                    <span className="label">BTC Address:</span>
+                    <span className="value">{swap.btcSwapAddress}</span>
+                  </div>
                 )}
-                
-                <p><strong>Hashed Secret:</strong> <code>{swap.hashedSecret}</code></p>
               </div>
 
-              {/* Funding Status Display */}
               {getFundingStatusDisplay(swap.id)}
-
-              {swap.status === 'initiated' && (
-                <div className="swap-actions">
-                  {/* Funding Check Buttons */}
-                  <div className="funding-actions" style={{ marginBottom: '15px' }}>
-                    <button
-                      onClick={() => checkFundingStatus(swap.id)}
-                      disabled={checkingFunding}
-                      className="check-funding-btn"
-                      style={{ 
-                        backgroundColor: '#007bff', 
-                        color: 'white', 
-                        padding: '8px 16px', 
-                        marginRight: '10px',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {checkingFunding ? '🔍 Checking...' : '🔍 Check Funding Status'}
-                    </button>
-                    
-                    {swap.type === 'btc-to-eth' && (
-                      <button
-                        onClick={() => simulateBtcFunding(swap.id)}
+              
+              <div className="swap-actions">
+                {swap.status !== 'completed' && swap.status !== 'refunded' && (
+                  <>
+                    {/* Add funding button if swap is not funded */}
+                    {swap.ethAmount && parseFloat(formatAmount(swap.ethAmount)) === 0 && (
+                      <button 
+                        onClick={() => fundEthSwap(swap.id, swap.ethAmount)}
                         disabled={loading}
-                        className="simulate-funding-btn"
-                        style={{ 
-                          backgroundColor: '#28a745', 
-                          color: 'white', 
-                          padding: '8px 16px',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer'
-                        }}
+                        className="action-button fund-eth"
                       >
-                        {loading ? '⏳ Simulating...' : '🪙 Simulate BTC Funding'}
+                        💰 Fund ETH ({formatAmount(swap.ethAmount)} ETH)
                       </button>
                     )}
-                  </div>
-
-                  {/* Withdrawal Actions */}
-                  <div className="secret-input">
-                    <input
-                      type="text"
-                      placeholder="Enter secret to withdraw"
-                      value={selectedSwap === swap.id ? secret : ''}
-                      onChange={(e) => {
-                        setSelectedSwap(swap.id);
-                        setSecret(e.target.value);
-                      }}
-                    />
-                    <button
-                      onClick={() => withdrawSwap(swap.id)}
-                      disabled={loading || !secret}
-                      className="withdraw-btn"
+                    
+                    <button 
+                      onClick={() => checkFundingStatus(swap.id)}
+                      disabled={checkingFunding}
+                      className="action-button check-funding"
                     >
-                      {loading ? 'Processing...' : 'Withdraw'}
+                      {checkingFunding ? 'Checking...' : '💰 Check Funding'}
                     </button>
-                  </div>
-                  
-                  <button
-                    onClick={() => refundSwap(swap.id)}
-                    disabled={loading}
-                    className="refund-btn"
-                  >
-                    {loading ? 'Processing...' : 'Refund (if expired)'}
-                  </button>
-                </div>
-              )}
-
-              {swap.completionTxHash && (
-                <p><strong>Completion Tx:</strong> <code>{swap.completionTxHash}</code></p>
-              )}
+                    
+                    {swap.btcSwapAddress && (
+                      <button 
+                        onClick={() => simulateBtcFunding(swap.id)}
+                        disabled={loading}
+                        className="action-button simulate-funding"
+                      >
+                        🔧 Simulate BTC Funding
+                      </button>
+                    )}
+                    
+                    <div className="withdraw-section">
+                      <input
+                        type="text"
+                        placeholder="Enter secret (64 hex chars)"
+                        value={selectedSwap === swap.id ? secret : ''}
+                        onChange={(e) => {
+                          setSecret(e.target.value);
+                          setSelectedSwap(swap.id);
+                        }}
+                        className="secret-input"
+                        maxLength={66}
+                        style={{ minWidth: '500px', fontFamily: 'monospace' }}
+                      />
+                      <button 
+                        onClick={() => withdrawSwap(swap.id)}
+                        disabled={loading || !secret || selectedSwap !== swap.id}
+                        className="action-button withdraw"
+                      >
+                        {loading ? 'Processing...' : '💎 Withdraw'}
+                      </button>
+                    </div>
+                    
+                    <button 
+                      onClick={() => refundSwap(swap.id)}
+                      disabled={loading}
+                      className="action-button refund"
+                    >
+                      🔄 Refund
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           ))}
         </div>

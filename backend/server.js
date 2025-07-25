@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { ethers } = require('ethers');
 const BitcoinAtomicSwap = require('../bitcoin/atomicSwap');
+const DogecoinAtomicSwap = require('../dogecoin/atomicSwap');
 const AtomicSwapABI = require('../artifacts/contracts/AtomicSwap.sol/AtomicSwap.json');
 const path = require('path');
 
@@ -17,6 +18,7 @@ app.use(express.json());
 
 // Initialize services
 const bitcoinSwap = new BitcoinAtomicSwap();
+const dogecoinSwap = new DogecoinAtomicSwap();
 let ethProvider, ethContract;
 
 // Initialize Ethereum connection
@@ -210,6 +212,208 @@ app.post('/api/swap/btc-to-eth/initiate', async (req, res) => {
 });
 
 /**
+ * Initiate Ethereum to Dogecoin swap
+ */
+app.post('/api/swap/eth-to-doge/initiate', async (req, res) => {
+    try {
+        const {
+            swapId,
+            ethAmount,
+            dogeAmount,
+            dogeAddress,
+            hashedSecret,
+            timelock,
+            ethTokenAddress
+        } = req.body;
+
+        // Validate inputs
+        if (!swapId || !ethAmount || !dogeAmount || !dogeAddress || !hashedSecret || !timelock) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required parameters'
+            });
+        }
+
+        // Store swap details
+        activeSwaps.set(swapId, {
+            type: 'eth-to-doge',
+            ethAmount,
+            dogeAmount,
+            dogeAddress,
+            hashedSecret,
+            timelock,
+            ethTokenAddress: ethTokenAddress || ethers.ZeroAddress,
+            status: 'initiated',
+            createdAt: Date.now()
+        });
+
+        res.json({
+            success: true,
+            data: {
+                swapId,
+                message: 'Dogecoin swap initiated. Please fund the Ethereum contract.',
+                nextStep: 'fund-ethereum-contract'
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * Initiate Dogecoin to Ethereum swap
+ */
+app.post('/api/swap/doge-to-eth/initiate', async (req, res) => {
+    try {
+        const {
+            swapId,
+            dogeAmount,
+            ethAmount,
+            ethAddress,
+            hashedSecret,
+            timelock,
+            ethTokenAddress,
+            dogeSenderPubKey,
+            dogeRecipientPubKey
+        } = req.body;
+
+        // Create Dogecoin atomic swap script
+        const script = dogecoinSwap.createAtomicSwapScript(
+            hashedSecret,
+            timelock,
+            dogeRecipientPubKey,
+            dogeSenderPubKey
+        );
+
+        const dogeSwapAddress = dogecoinSwap.createP2SHAddress(script);
+
+        // Store swap details
+        activeSwaps.set(swapId, {
+            type: 'doge-to-eth',
+            dogeAmount,
+            ethAmount,
+            ethAddress,
+            hashedSecret,
+            timelock,
+            ethTokenAddress: ethTokenAddress || ethers.ZeroAddress,
+            dogeSwapAddress,
+            dogeScript: script.toString('hex'),
+            dogeSenderPubKey,
+            dogeRecipientPubKey,
+            status: 'initiated',
+            createdAt: Date.now()
+        });
+
+        res.json({
+            success: true,
+            data: {
+                swapId,
+                dogeSwapAddress,
+                message: 'Dogecoin swap address created. Please fund this address.',
+                nextStep: 'fund-dogecoin-address'
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * Create Dogecoin atomic swap address
+ */
+app.post('/api/dogecoin/create-swap-address', (req, res) => {
+    try {
+        const {
+            hashedSecret,
+            timelock,
+            recipientPubKey,
+            senderPubKey
+        } = req.body;
+
+        if (!hashedSecret || !timelock || !recipientPubKey || !senderPubKey) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required parameters'
+            });
+        }
+        
+        // Remove 0x prefix if present
+        const cleanHashedSecret = hashedSecret.startsWith('0x') ? 
+            hashedSecret.slice(2) : hashedSecret;
+
+        const script = dogecoinSwap.createAtomicSwapScript(
+            cleanHashedSecret,
+            timelock,
+            recipientPubKey,
+            senderPubKey
+        );
+
+        const swapAddress = dogecoinSwap.createP2SHAddress(script);
+
+        res.json({
+            success: true,
+            data: {
+                swapAddress,
+                script: script.toString('hex'),
+                network: process.env.DOGECOIN_NETWORK || 'testnet'
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * Simulate Dogecoin funding (for demo purposes)
+ */
+app.post('/api/swap/:swapId/simulate-doge-funding', async (req, res) => {
+    try {
+        const { swapId } = req.params;
+        const swap = activeSwaps.get(swapId);
+
+        if (!swap) {
+            return res.status(404).json({
+                success: false,
+                error: 'Swap not found'
+            });
+        }
+
+        // Mark as funded
+        if (!swap.fundingStatus) {
+            swap.fundingStatus = {};
+        }
+        swap.fundingStatus.dogeFunded = true;
+        swap.fundingStatus.simulatedFunding = true;
+        swap.fundingStatus.message = '✅ Dogecoin funding simulated successfully!';
+        
+        activeSwaps.set(swapId, swap);
+
+        res.json({
+            success: true,
+            data: {
+                message: 'Dogecoin funding simulated successfully',
+                fundingStatus: swap.fundingStatus
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
  * Get swap status
  */
 app.get('/api/swap/:swapId/status', async (req, res) => {
@@ -371,6 +575,12 @@ app.listen(PORT, async () => {
 
 module.exports = app;
 
+// Environment variables for simulation
+const SIMULATION_MODE = process.env.SIMULATION_MODE === 'true';
+const SIMULATE_BTC_FUNDING = process.env.SIMULATE_BTC_FUNDING === 'true';
+const SIMULATE_DOGE_FUNDING = process.env.SIMULATE_DOGE_FUNDING === 'true';
+const SIMULATE_ETH_FUNDING = process.env.SIMULATE_ETH_FUNDING === 'true';
+
 /**
  * Check funding status for a swap
  */
@@ -389,48 +599,107 @@ app.post('/api/swap/:swapId/check-funding', async (req, res) => {
         let fundingStatus = {
             ethFunded: false,
             btcFunded: false,
+            dogeFunded: false,
             readyForWithdrawal: false,
-            message: ''
+            message: '',
+            simulationMode: SIMULATION_MODE
         };
 
-        // Check Ethereum funding (real check)
-        if (ethContract && (swap.type === 'eth-to-btc' || swap.type === 'eth-to-doge')) {
-            try {
-                const ethSwap = await ethContract.getSwap(swapId);
-                fundingStatus.ethFunded = ethSwap.amount > 0 && !ethSwap.withdrawn && !ethSwap.refunded;
-            } catch (error) {
-                fundingStatus.ethFunded = false;
+        // Check Ethereum funding
+        if (swap.type === 'eth-to-btc' || swap.type === 'eth-to-doge') {
+            if (SIMULATE_ETH_FUNDING) {
+                // Simulate ETH funding
+                const timeElapsed = Date.now() - swap.createdAt;
+                const simulatedFundingDelay = 20000; // 20 seconds
+                fundingStatus.ethFunded = timeElapsed > simulatedFundingDelay;
+                
+                if (!fundingStatus.ethFunded) {
+                    fundingStatus.message = `ETH funding simulated. Will be "funded" in ${Math.max(0, Math.ceil((simulatedFundingDelay - timeElapsed) / 1000))} seconds.`;
+                }
+            } else if (ethContract) {
+                // Real blockchain check
+                try {
+                    const ethSwap = await ethContract.getSwap(swapId);
+                    fundingStatus.ethFunded = ethSwap.amount > 0 && !ethSwap.withdrawn && !ethSwap.refunded;
+                } catch (error) {
+                    fundingStatus.ethFunded = false;
+                }
             }
         }
 
-        // Check Bitcoin funding (simulated for local development)
-        if (swap.btcSwapAddress) {
-            // In a real implementation, this would query Bitcoin blockchain
-            // For demo purposes, we'll simulate based on time elapsed
-            const timeElapsed = Date.now() - swap.createdAt;
-            const simulatedFundingDelay = 30000; // 30 seconds
-            
-            // Simulate that Bitcoin gets "funded" after 30 seconds
-            fundingStatus.btcFunded = timeElapsed > simulatedFundingDelay;
-            
-            if (!fundingStatus.btcFunded) {
-                fundingStatus.message = `Bitcoin funding simulated. Will be "funded" in ${Math.max(0, Math.ceil((simulatedFundingDelay - timeElapsed) / 1000))} seconds.`;
-            }
-        }
-
-        // Determine if ready for withdrawal
-        if (swap.type === 'eth-to-btc') {
-            fundingStatus.readyForWithdrawal = fundingStatus.ethFunded;
-            if (fundingStatus.readyForWithdrawal) {
-                fundingStatus.message = '✅ ETH is funded! You can withdraw by entering the secret.';
+        // Check Bitcoin funding
+        if (swap.btcSwapAddress && (swap.type === 'btc-to-eth' || swap.type === 'eth-to-btc')) {
+            if (SIMULATE_BTC_FUNDING) {
+                // Simulate BTC funding
+                const timeElapsed = Date.now() - swap.createdAt;
+                const simulatedFundingDelay = 30000; // 30 seconds
+                fundingStatus.btcFunded = timeElapsed > simulatedFundingDelay;
+                
+                if (!fundingStatus.btcFunded) {
+                    fundingStatus.message = `Bitcoin funding simulated. Will be "funded" in ${Math.max(0, Math.ceil((simulatedFundingDelay - timeElapsed) / 1000))} seconds.`;
+                }
             } else {
-                fundingStatus.message = '⏳ Waiting for ETH funding confirmation...';
+                // TODO: Real Bitcoin blockchain check would go here
+                // For now, keep simulation as fallback
+                const timeElapsed = Date.now() - swap.createdAt;
+                const simulatedFundingDelay = 30000;
+                fundingStatus.btcFunded = timeElapsed > simulatedFundingDelay;
             }
-        } else if (swap.type === 'btc-to-eth') {
-            fundingStatus.readyForWithdrawal = fundingStatus.btcFunded;
-            if (fundingStatus.readyForWithdrawal) {
-                fundingStatus.message = '✅ BTC is "funded" (simulated)! You can withdraw by entering the secret.';
+        }
+
+        // Check Dogecoin funding
+        if (swap.dogeSwapAddress && (swap.type === 'doge-to-eth' || swap.type === 'eth-to-doge')) {
+            if (SIMULATE_DOGE_FUNDING) {
+                // Simulate DOGE funding
+                const timeElapsed = Date.now() - swap.createdAt;
+                const simulatedFundingDelay = 30000; // 30 seconds
+                fundingStatus.dogeFunded = timeElapsed > simulatedFundingDelay;
+                
+                if (!fundingStatus.dogeFunded) {
+                    fundingStatus.message = `Dogecoin funding simulated. Will be "funded" in ${Math.max(0, Math.ceil((simulatedFundingDelay - timeElapsed) / 1000))} seconds.`;
+                }
+            } else {
+                // TODO: Real Dogecoin blockchain check would go here
+                // For now, keep simulation as fallback
+                const timeElapsed = Date.now() - swap.createdAt;
+                const simulatedFundingDelay = 30000;
+                fundingStatus.dogeFunded = timeElapsed > simulatedFundingDelay;
             }
+        }
+
+        // Determine if ready for withdrawal based on swap type
+        switch (swap.type) {
+            case 'eth-to-btc':
+                fundingStatus.readyForWithdrawal = fundingStatus.ethFunded;
+                if (fundingStatus.readyForWithdrawal) {
+                    fundingStatus.message = `✅ ETH is ${SIMULATE_ETH_FUNDING ? 'simulated as ' : ''}funded! You can withdraw by entering the secret.`;
+                } else if (!fundingStatus.message) {
+                    fundingStatus.message = '⏳ Waiting for ETH funding confirmation...';
+                }
+                break;
+                
+            case 'btc-to-eth':
+                fundingStatus.readyForWithdrawal = fundingStatus.btcFunded;
+                if (fundingStatus.readyForWithdrawal) {
+                    fundingStatus.message = `✅ BTC is ${SIMULATE_BTC_FUNDING ? 'simulated as ' : ''}funded! You can withdraw by entering the secret.`;
+                }
+                break;
+                
+            case 'eth-to-doge':
+                fundingStatus.readyForWithdrawal = fundingStatus.ethFunded;
+                if (fundingStatus.readyForWithdrawal) {
+                    fundingStatus.message = `✅ ETH is ${SIMULATE_ETH_FUNDING ? 'simulated as ' : ''}funded! You can withdraw by entering the secret.`;
+                } else if (!fundingStatus.message) {
+                    fundingStatus.message = '⏳ Waiting for ETH funding confirmation...';
+                }
+                break;
+                
+            case 'doge-to-eth':
+                fundingStatus.readyForWithdrawal = fundingStatus.dogeFunded;
+                if (fundingStatus.readyForWithdrawal) {
+                    fundingStatus.message = `✅ DOGE is ${SIMULATE_DOGE_FUNDING ? 'simulated as ' : ''}funded! You can withdraw by entering the secret.`;
+                }
+                break;
         }
 
         // Update swap with funding info
@@ -445,8 +714,10 @@ app.post('/api/swap/:swapId/check-funding', async (req, res) => {
                 fundingStatus,
                 swapType: swap.type,
                 btcSwapAddress: swap.btcSwapAddress,
+                dogeSwapAddress: swap.dogeSwapAddress,
                 ethAmount: swap.ethAmount,
-                btcAmount: swap.btcAmount
+                btcAmount: swap.btcAmount,
+                dogeAmount: swap.dogeAmount
             }
         });
     } catch (error) {
@@ -496,3 +767,167 @@ app.post('/api/swap/:swapId/simulate-btc-funding', async (req, res) => {
         });
     }
 });
+
+/**
+ * Handle withdrawal for non-ETH swaps (BTC/DOGE)
+ */
+app.post('/api/swap/:swapId/withdraw', async (req, res) => {
+    try {
+        const { swapId } = req.params;
+        const { secret } = req.body;
+        const swap = activeSwaps.get(swapId);
+
+        if (!swap) {
+            return res.status(404).json({
+                success: false,
+                error: 'Swap not found'
+            });
+        }
+
+        // Only handle non-ETH swaps here
+        if (swap.type !== 'btc-to-eth' && swap.type !== 'doge-to-eth') {
+            return res.status(400).json({
+                success: false,
+                error: 'This endpoint only handles BTC/DOGE to ETH swaps'
+            });
+        }
+
+        // Validate secret format
+        let formattedSecret = secret.trim();
+        if (!formattedSecret.startsWith('0x')) {
+            formattedSecret = '0x' + formattedSecret;
+        }
+
+        if (formattedSecret.length !== 66 || !/^0x[0-9a-fA-F]{64}$/.test(formattedSecret)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid secret format. Must be 32 bytes (64 hex characters)'
+            });
+        }
+
+        // Verify secret matches hashed secret
+        const secretBytes = Buffer.from(formattedSecret.slice(2), 'hex');
+        const crypto = require('crypto');
+        const computedHash = '0x' + crypto.createHash('sha256').update(secretBytes).digest('hex');
+        
+        if (computedHash !== swap.hashedSecret) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid secret. Does not match hashed secret.'
+            });
+        }
+
+        // Check if already withdrawn
+        if (swap.status === 'completed') {
+            return res.status(400).json({
+                success: false,
+                error: 'Swap already withdrawn'
+            });
+        }
+
+        // Check timelock (simulate)
+        const currentTime = Math.floor(Date.now() / 1000);
+        if (currentTime >= swap.timelock) {
+            return res.status(400).json({
+                success: false,
+                error: 'Swap has expired and can only be refunded'
+            });
+        }
+
+        // Simulate withdrawal
+        swap.status = 'completed';
+        swap.completedAt = Date.now();
+        swap.withdrawnSecret = formattedSecret;
+        
+        activeSwaps.set(swapId, swap);
+
+        res.json({
+            success: true,
+            data: {
+                message: `${swap.type.toUpperCase()} swap withdrawn successfully (simulated)`,
+                swapId,
+                secret: formattedSecret,
+                completedAt: swap.completedAt
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * Handle refund for non-ETH swaps (BTC/DOGE)
+ */
+app.post('/api/swap/:swapId/refund', async (req, res) => {
+    try {
+        const { swapId } = req.params;
+        const swap = activeSwaps.get(swapId);
+
+        if (!swap) {
+            return res.status(404).json({
+                success: false,
+                error: 'Swap not found'
+            });
+        }
+
+        // Only handle non-ETH swaps here
+        if (swap.type !== 'btc-to-eth' && swap.type !== 'doge-to-eth') {
+            return res.status(400).json({
+                success: false,
+                error: 'This endpoint only handles BTC/DOGE to ETH swaps'
+            });
+        }
+
+        // Check if already completed
+        if (swap.status === 'completed') {
+            return res.status(400).json({
+                success: false,
+                error: 'Swap already withdrawn, cannot refund'
+            });
+        }
+
+        // Check if already refunded
+        if (swap.status === 'refunded') {
+            return res.status(400).json({
+                success: false,
+                error: 'Swap already refunded'
+            });
+        }
+
+        // Check timelock (must be expired for refund)
+        const currentTime = Math.floor(Date.now() / 1000);
+        if (currentTime < swap.timelock) {
+            const timeRemaining = swap.timelock - currentTime;
+            const hoursRemaining = Math.ceil(timeRemaining / 3600);
+            return res.status(400).json({
+                success: false,
+                error: `Cannot refund yet. Timelock expires in approximately ${hoursRemaining} hours.`
+            });
+        }
+
+        // Simulate refund
+        swap.status = 'refunded';
+        swap.refundedAt = Date.now();
+        
+        activeSwaps.set(swapId, swap);
+
+        res.json({
+            success: true,
+            data: {
+                message: `${swap.type.toUpperCase()} swap refunded successfully (simulated)`,
+                swapId,
+                refundedAt: swap.refundedAt
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ... existing code ...

@@ -785,19 +785,57 @@
   gap: 10px;
   margin-bottom: 15px;
   align-items: center;
+  width: 100%;
 }
 
 .secret-input input {
   flex: 1;
-  padding: 10px 15px;
+  min-width: 500px; /* Ensure minimum width for 64 hex characters */
+  width: 100%;
+  padding: 12px 15px;
   border: 2px solid #dee2e6;
   border-radius: 8px;
-  font-family: 'Monaco', 'Menlo', monospace;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 14px;
+  letter-spacing: 0.5px; /* Better readability for hex */
+  background: #f8f9fa;
+  transition: all 0.3s ease;
 }
 
 .secret-input input:focus {
   outline: none;
   border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.secret-input input::placeholder {
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Add styling for the fund-eth button */
+.action-button.fund-eth {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 10px;
+}
+
+.action-button.fund-eth:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.action-button.fund-eth:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .withdraw-btn {
@@ -865,6 +903,13 @@
   
   .secret-input {
     flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .secret-input input {
+    min-width: unset;
+    width: 100%;
+    margin-bottom: 10px;
   }
 }
 
@@ -881,6 +926,11 @@
   
   .swap-card {
     padding: 20px;
+  }
+  
+  .secret-input input {
+    font-size: 12px;
+    padding: 10px 12px;
   }
 }
 
